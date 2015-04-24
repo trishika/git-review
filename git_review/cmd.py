@@ -1265,6 +1265,10 @@ def _main():
                              action="store_false",
                              help="Ignore tracked branch.")
 
+    reviewer_group = parser.add_mutually_exclusive_group()
+    reviewer_group.add_argument("--reviewer", dest="reviewer",
+                             help="Comma sperated list of reviewer email to be added.")
+
     fetch = parser.add_mutually_exclusive_group()
     fetch.set_defaults(download=False, compare=False, cherrypickcommit=False,
                        cherrypickindicate=False, cherrypickonly=False)
@@ -1429,6 +1433,13 @@ def _main():
             sys.exit(1)
     assert_one_change(remote, branch, yes, have_hook)
 
+    extras_options = ""
+    if options.reviewer:
+        extras_options += "--receive-pack='git receive-pack"
+        for reviewer in options.reviewer.split(','):
+            extras_options += " --reviewer=%s" % reviewer.strip()
+        extras_options += "'"
+
     ref = "publish"
 
     if options.draft:
@@ -1438,7 +1449,7 @@ def _main():
     elif options.compatible:
         ref = "for"
 
-    cmd = "git push %s HEAD:refs/%s/%s" % (remote, ref, branch)
+    cmd = "git push %s %s HEAD:refs/%s/%s" % (extras_options, remote, ref, branch)
     if options.topic is not None:
         topic = options.topic
     else:
